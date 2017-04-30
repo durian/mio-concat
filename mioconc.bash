@@ -4,9 +4,13 @@ DATEFR=$(date +"%Y-%m-%d")
 DATETO=0
 OUTBASE="__NONE__"
 HALF=0
+DRYRUN=0
 
-while getopts "f:ho:t:" opt; do
+while getopts "df:ho:t:" opt; do
   case $opt in
+      d)
+	  DRYRUN=1
+	  ;;
       f)
 	  DATEFR=$OPTARG
 	  ;;
@@ -57,23 +61,27 @@ if [[ ! -s $TMPF ]]; then
     exit 1
 fi
 
-if [ $HALF -eq 1 ]; then
-    ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/2:-2 ${OUTBASE}.MP4 -loglevel 8
-else
-    ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASE}.MP4 -loglevel 8
-fi
+if [ $DRYRUN -eq 0 ]; then
+    if [ $HALF -eq 1 ]; then
+	ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/2:-2 ${OUTBASE}.MP4 -loglevel 8
+    else
+	ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASE}.MP4 -loglevel 8
+    fi
+    
+    # Concatenate the LOG files.
+    cat $(cat $TMPL) > ${OUTBASE}.LOG
 
-# Concatenate the LOG files.
-cat $(cat $TMPL) > ${OUTBASE}.LOG
+    # Make Mio manager put them on the right date
+    # in the calendar.
+    T=$(date -j -f '%Y-%m-%d' $DATEFR +'%Y%m%d')1200
+    touch -t $T ${OUTBASE}.MP4
+    touch -t $T ${OUTBASE}.LOG
+
+    echo "Created ${OUTBASE}.MP4 and ${OUTBASE}.LOG"
+fi
 
 rm $TMPF
 rm $TMPL
 
-# Make Mio manager put them on the right date
-# in the calendar.
-T=$(date -j -f '%Y-%m-%d' $DATEFR +'%Y%m%d')1200
-touch -t $T ${OUTBASE}.MP4
-touch -t $T ${OUTBASE}.LOG
 
-echo "Created ${OUTBASE}.MP4 and ${OUTBASE}.LOG"
 
