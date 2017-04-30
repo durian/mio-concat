@@ -41,10 +41,10 @@ D0=$(date -j -f "%Y-%m-%d %H:%M:%S" "${DATEFR} 00:00:00" +"%s")
 D1=$(date -j -f "%Y-%m-%d %H:%M:%S" "${DATETO} 23:59:59" +"%s")
 
 for l in FILE*.LOG; do
+    # $GPRMC,143356.000,A,5617.4795,N,01250.6955,E,0.00,0.00,270417,,,A*6C
     DT=$(grep GPRMC $l | head -n1 | awk -F',' '{print "20" substr($10,5,2) "-" substr($10,3,2) "-" substr($10,1,2)}')
     DX=$(date -j -f "%F" $DT +"%s")
     if [ $DX -ge $D0 -a $DX -le $D1 ]; then
-	#echo $D0 $D1 $DX
 	FN=${l%LOG}MP4
 	if [[ -s $FN ]]; then
 	    echo "Found $l, $FN $DT"
