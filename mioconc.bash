@@ -22,13 +22,11 @@ while getopts "f:ho:t:" opt; do
   esac
 done
 
-if [[ $DATETO -eq 0 ]]; then
-    #DATETO=$(date -j -v+1d -f "%Y-%m-%d" $DATEFR "+%Y-%m-%d")
-    # after we fixed epoch comparison
+if [ $DATETO -eq 0 ]; then
     DATETO=$DATEFR 
 fi
 
-if [[ $OUTBASE -eq 0 ]]; then
+if [ $OUTBASE -eq 0 ]; then
    OUTBASE=CONC_$(date -j -f "%Y-%m-%d" $DATEFR "+%Y%m%d")
 fi
 
@@ -65,12 +63,14 @@ else
     ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASE}.MP4 -loglevel 8
 fi
 
-
+# Concatenate the LOG files.
 cat $(cat $TMPL) > ${OUTBASE}.LOG
 
 rm $TMPF
 rm $TMPL
 
+# Make Mio manager put them on the right date
+# in the calendar.
 T=$(date -j -f '%Y-%m-%d' $DATEFR +'%Y%m%d')1200
 touch -t $T ${OUTBASE}.MP4
 touch -t $T ${OUTBASE}.LOG
