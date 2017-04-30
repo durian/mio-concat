@@ -2,7 +2,7 @@
 #
 DATEFR=$(date +"%Y-%m-%d")
 DATETO=0
-OUTBASE=0
+OUTBASE="__NONE__"
 HALF=0
 
 while getopts "f:ho:t:" opt; do
@@ -26,7 +26,7 @@ if [ $DATETO -eq 0 ]; then
     DATETO=$DATEFR 
 fi
 
-if [ $OUTBASE -eq 0 ]; then
+if [[ "$OUTBASE" == "__NONE__" ]]; then
    OUTBASE=CONC_$(date -j -f "%Y-%m-%d" $DATEFR "+%Y%m%d")
 fi
 
