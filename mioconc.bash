@@ -5,14 +5,19 @@ DATETO=0
 OUTBASE="__NONE__"
 HALF=0
 DRYRUN=0
+GPX=0
+GPSBABEL=$(which gpsbabel) || GPSBABEL="__NONE__"
 
-while getopts "df:ho:t:" opt; do
+while getopts "df:gho:t:" opt; do
   case $opt in
       d)
 	  DRYRUN=1
 	  ;;
       f)
 	  DATEFR=$OPTARG
+	  ;;
+      g)
+	  GPX=1
 	  ;;
       h)
 	  HALF=1
@@ -67,17 +72,26 @@ if [ $DRYRUN -eq 0 ]; then
     else
 	ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASE}.MP4 -loglevel 8
     fi
+    echo "Created ${OUTBASE}.MP4"
     
     # Concatenate the LOG files.
     cat $(cat $TMPL) > ${OUTBASE}.LOG
+    echo "Created ${OUTBASE}.LOG"
 
+    if [ $GPX -eq 1 ]; then
+	if [[ "$GPSBABEL" == "__NONE__" ]]; then
+	    echo "No gpsbabel found"
+	else
+	    $GPSBABEL -w -t -i nmea -f ${OUTBASE}.LOG -o gpx -F ${OUTBASE}.GPX
+	    echo "Created ${OUTBASE}.GPX"
+	fi
+    fi
+	
     # Make Mio manager put them on the right date
     # in the calendar.
     T=$(date -j -f '%Y-%m-%d' $DATEFR +'%Y%m%d')1200
     touch -t $T ${OUTBASE}.MP4
     touch -t $T ${OUTBASE}.LOG
-
-    echo "Created ${OUTBASE}.MP4 and ${OUTBASE}.LOG"
 fi
 
 rm $TMPF
