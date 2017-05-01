@@ -72,19 +72,20 @@ fi
 
 if [ $DRYRUN -eq 0 ]; then
     if [ $HALF -eq 1 ]; then
-	echo ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/2:-2 ${OUTBASE}.MP4 
-	ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/2:-2 ${OUTBASE}.MP4 -loglevel 8
+	OUTBASEF=${OUTBASE}.H
+	echo ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/2:-2 ${OUTBASEF}.MP4 
+	ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/2:-2 ${OUTBASEF}.MP4 -loglevel 8
     else
-	echo ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASE}.MP4 
-	ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASE}.MP4 -loglevel 8
+	echo ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASEF}.MP4 
+	ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASEF}.MP4 -loglevel 8
     fi
     echo "Created ${OUTBASE}.MP4"
 
     # Hyperlapse x50
     if [ $SPEEDUP -gt 0 ]; then
-	echo ffmpeg -i ${OUTBASE}.MP4 -filter:v "setpts=(1/$SPEEDUP)*PTS" -an ${OUTBASE}.S$SPEEDUP.MP4
-	ffmpeg -i ${OUTBASE}.MP4 -filter:v "setpts=(1/$SPEEDUP)*PTS" -an ${OUTBASE}.S$SPEEDUP.MP4 -loglevel 8
-	echo "Created ${OUTBASE}.S$SPEEDUP.MP4"
+	echo ffmpeg -i ${OUTBASEF}.MP4 -filter:v "setpts=(1/$SPEEDUP)*PTS" -an ${OUTBASEF}.S$SPEEDUP.MP4
+	ffmpeg -i ${OUTBASEF}.MP4 -filter:v "setpts=(1/$SPEEDUP)*PTS" -an ${OUTBASEF}.S$SPEEDUP.MP4 -loglevel 8
+	echo "Created ${OUTBASEF}.S$SPEEDUP.MP4"
     fi
 fi
 
