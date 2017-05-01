@@ -79,7 +79,7 @@ if [ $DRYRUN -eq 0 ]; then
 	echo ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASEF}.MP4 
 	ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASEF}.MP4 -loglevel 8
     fi
-    echo "Created ${OUTBASE}.MP4"
+    echo "Created ${OUTBASEF}.MP4"
 
     # Hyperlapse x50
     if [ $SPEEDUP -gt 0 ]; then
