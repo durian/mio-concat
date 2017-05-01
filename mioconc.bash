@@ -82,8 +82,8 @@ if [ $DRYRUN -eq 0 ]; then
 
     # Hyperlapse x50
     if [ $SPEEDUP -gt 0 ]; then
-	echo ffmpeg -i ${OUTBASE}.MP4 -filter:v "setpts=(1/$SPEEDUP)*PTS" ${OUTBASE}.S$SPEEDUP.MP4
-	ffmpeg -i ${OUTBASE}.MP4 -filter:v "setpts=(1/$SPEEDUP)*PTS" ${OUTBASE}.S$SPEEDUP.MP4 -loglevel 8
+	echo ffmpeg -i ${OUTBASE}.MP4 -filter:v "setpts=(1/$SPEEDUP)*PTS" -an ${OUTBASE}.S$SPEEDUP.MP4
+	ffmpeg -i ${OUTBASE}.MP4 -filter:v "setpts=(1/$SPEEDUP)*PTS" -an ${OUTBASE}.S$SPEEDUP.MP4 -loglevel 8
 	echo "Created ${OUTBASE}.S$SPEEDUP.MP4"
     fi
 fi
