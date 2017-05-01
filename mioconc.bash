@@ -76,16 +76,17 @@ if [ $DRYRUN -eq 0 ]; then
 	echo ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/2:-2 ${OUTBASEF}.MP4 
 	ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/2:-2 ${OUTBASEF}.MP4 -loglevel 8
     else
+	OUTBASEF=${OUTBASE}
 	echo ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASEF}.MP4 
 	ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASEF}.MP4 -loglevel 8
     fi
     echo "Created ${OUTBASEF}.MP4"
 
-    # Hyperlapse x50
-    if [ $SPEEDUP -gt 0 ]; then
-	echo ffmpeg -i ${OUTBASEF}.MP4 -filter:v "setpts=(1/$SPEEDUP)*PTS" -an ${OUTBASEF}.S$SPEEDUP.MP4
-	ffmpeg -i ${OUTBASEF}.MP4 -filter:v "setpts=(1/$SPEEDUP)*PTS" -an ${OUTBASEF}.S$SPEEDUP.MP4 -loglevel 8
-	echo "Created ${OUTBASEF}.S$SPEEDUP.MP4"
+    # Hyperlapse
+    if [ ${SPEEDUP} -gt 0 ]; then
+	echo ffmpeg -i ${OUTBASEF}.MP4 -filter:v "setpts=(1/${SPEEDUP})*PTS" -an ${OUTBASEF}.S${SPEEDUP}.MP4
+	ffmpeg -i ${OUTBASEF}.MP4 -filter:v "setpts=(1/${SPEEDUP})*PTS" -an ${OUTBASEF}.S${SPEEDUP}.MP4 -loglevel 8
+	echo "Created ${OUTBASEF}.S${SPEEDUP}.MP4"
     fi
 fi
 
