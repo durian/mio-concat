@@ -3,8 +3,8 @@
 DATEFR=$(date +"%Y-%m-%d")
 DATETO=0
 OUTBASE="__NONE__"
-HALF=0
-DRYRUN=0
+HALF=0    # half the size of the video
+DRYRUN=0  # skip creation of video file
 GPX=0
 GPSBABEL=$(which gpsbabel) || GPSBABEL="__NONE__"
 
@@ -68,31 +68,38 @@ fi
 
 if [ $DRYRUN -eq 0 ]; then
     if [ $HALF -eq 1 ]; then
+	echo ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/2:-2 ${OUTBASE}.MP4 -loglevel 8
 	ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/2:-2 ${OUTBASE}.MP4 -loglevel 8
     else
+	echo ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASE}.MP4 -loglevel 8
 	ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASE}.MP4 -loglevel 8
     fi
     echo "Created ${OUTBASE}.MP4"
-    
-    # Concatenate the LOG files.
-    cat $(cat $TMPL) > ${OUTBASE}.LOG
-    echo "Created ${OUTBASE}.LOG"
-
-    if [ $GPX -eq 1 ]; then
-	if [[ "$GPSBABEL" == "__NONE__" ]]; then
-	    echo "No gpsbabel found"
-	else
-	    $GPSBABEL -w -t -i nmea -f ${OUTBASE}.LOG -o gpx -F ${OUTBASE}.GPX
-	    echo "Created ${OUTBASE}.GPX"
-	fi
-    fi
-	
-    # Make Mio manager put them on the right date
-    # in the calendar.
-    T=$(date -j -f '%Y-%m-%d' $DATEFR +'%Y%m%d')1200
-    touch -t $T ${OUTBASE}.MP4
-    touch -t $T ${OUTBASE}.LOG
 fi
+
+# Concatenate the LOG files.
+cat $(cat $TMPL) > ${OUTBASE}.LOG
+echo "Created ${OUTBASE}.LOG"
+
+if [ $GPX -eq 1 ]; then
+    if [[ "$GPSBABEL" == "__NONE__" ]]; then
+	echo "No gpsbabel found"
+    else
+	SIMPL="-x discard,hdop=4 -x simplify,crosstrack,error=0.001k"
+	# -x track,pack,sdistance=1k"
+	# -x position,distance=4m
+	#  -x track,pack,sdistance=0.1k,split=10m
+	echo $GPSBABEL -w -t -i nmea -f ${OUTBASE}.LOG $SIMPL -o gpx -F ${OUTBASE}.GPX
+	$GPSBABEL -w -t -i nmea -f ${OUTBASE}.LOG $SIMPL -o gpx -F ${OUTBASE}.GPX
+	echo "Created ${OUTBASE}.GPX"
+    fi
+fi
+	
+# Make Mio manager put them on the right date
+# in the calendar.
+T=$(date -j -f '%Y-%m-%d' $DATEFR +'%Y%m%d')1200
+touch -t $T ${OUTBASE}.MP4
+touch -t $T ${OUTBASE}.LOG
 
 rm $TMPF
 rm $TMPL
