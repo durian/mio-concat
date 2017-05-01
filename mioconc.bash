@@ -7,8 +7,9 @@ HALF=0    # half the size of the video
 DRYRUN=0  # skip creation of video file
 GPX=0
 GPSBABEL=$(which gpsbabel) || GPSBABEL="__NONE__"
+SPEEDUP=0
 
-while getopts "df:gho:t:" opt; do
+while getopts "df:gho:s:t:" opt; do
   case $opt in
       d)
 	  DRYRUN=1
@@ -24,6 +25,9 @@ while getopts "df:gho:t:" opt; do
 	  ;;
       o)
 	  OUTBASE=$OPTARG
+	  ;;
+      s)
+	  SPEEDUP=$OPTARG
 	  ;;
       t)
 	  DATETO=$OPTARG
@@ -68,13 +72,20 @@ fi
 
 if [ $DRYRUN -eq 0 ]; then
     if [ $HALF -eq 1 ]; then
-	echo ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/2:-2 ${OUTBASE}.MP4 -loglevel 8
+	echo ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/2:-2 ${OUTBASE}.MP4 
 	ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/2:-2 ${OUTBASE}.MP4 -loglevel 8
     else
-	echo ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASE}.MP4 -loglevel 8
+	echo ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASE}.MP4 
 	ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASE}.MP4 -loglevel 8
     fi
     echo "Created ${OUTBASE}.MP4"
+
+    # Hyperlapse x50
+    if [ $SPEEDUP -gt 0 ]; then
+	echo ffmpeg -i ${OUTBASE}.MP4 -filter:v "setpts=(1/$SPEEDUP)*PTS" ${OUTBASE}.S$SPEEDUP.MP4
+	ffmpeg -i ${OUTBASE}.MP4 -filter:v "setpts=(1/$SPEEDUP)*PTS" ${OUTBASE}.S$SPEEDUP.MP4 -loglevel 8
+	echo "Created ${OUTBASE}.S$SPEEDUP.MP4"
+    fi
 fi
 
 # Concatenate the LOG files.
@@ -86,11 +97,10 @@ if [ $GPX -eq 1 ]; then
 	echo "No gpsbabel found"
     else
 	SIMPL="-x discard,hdop=4 -x simplify,crosstrack,error=0.001k"
-	# -x track,pack,sdistance=1k"
 	# -x position,distance=4m
-	#  -x track,pack,sdistance=0.1k,split=10m
+	# -x track,pack,sdistance=0.1k,split=10m
 	echo $GPSBABEL -w -t -i nmea -f ${OUTBASE}.LOG $SIMPL -o gpx -F ${OUTBASE}.GPX
-	$GPSBABEL -w -t -i nmea -f ${OUTBASE}.LOG $SIMPL -o gpx -F ${OUTBASE}.GPX
+	X=$($GPSBABEL -w -t -i nmea -f ${OUTBASE}.LOG $SIMPL -o gpx -F ${OUTBASE}.GPX 2>&1 >/dev/null)
 	echo "Created ${OUTBASE}.GPX"
     fi
 fi
@@ -101,8 +111,6 @@ T=$(date -j -f '%Y-%m-%d' $DATEFR +'%Y%m%d')1200
 touch -t $T ${OUTBASE}.MP4
 touch -t $T ${OUTBASE}.LOG
 
+# Remove temporary files
 rm $TMPF
 rm $TMPL
-
-
-
