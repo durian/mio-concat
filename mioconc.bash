@@ -70,15 +70,21 @@ if [[ ! -s $TMPF ]]; then
     exit 1
 fi
 
+# Make Mio manager put them on the right date
+# in the calendar.
+T=$(date -j -f '%Y-%m-%d' $DATEFR +'%Y%m%d')1200
+
 if [ $DRYRUN -eq 0 ]; then
     if [ $HALF -eq 1 ]; then
 	OUTBASEF=${OUTBASE}.H
 	echo ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/2:-2 ${OUTBASEF}.MP4 
 	ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/2:-2 ${OUTBASEF}.MP4 -loglevel 8
+	touch -t $T ${OUTBASEF}.MP4
     else
 	OUTBASEF=${OUTBASE}
 	echo ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASEF}.MP4 
 	ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASEF}.MP4 -loglevel 8
+	touch -t $T ${OUTBASEF}.MP4
     fi
     echo "Created ${OUTBASEF}.MP4"
 
@@ -87,12 +93,14 @@ if [ $DRYRUN -eq 0 ]; then
 	echo ffmpeg -i ${OUTBASEF}.MP4 -filter:v "setpts=(1/${SPEEDUP})*PTS" -an ${OUTBASEF}.S${SPEEDUP}.MP4
 	ffmpeg -i ${OUTBASEF}.MP4 -filter:v "setpts=(1/${SPEEDUP})*PTS" -an ${OUTBASEF}.S${SPEEDUP}.MP4 -loglevel 8
 	echo "Created ${OUTBASEF}.S${SPEEDUP}.MP4"
+	touch -t $T ${OUTBASEF}.S${SPEEDUP}.MP4
     fi
 fi
 
 # Concatenate the LOG files.
 cat $(cat $TMPL) > ${OUTBASE}.LOG
 echo "Created ${OUTBASE}.LOG"
+touch -t $T ${OUTBASE}.LOG
 
 if [ $GPX -eq 1 ]; then
     if [[ "$GPSBABEL" == "__NONE__" ]]; then
@@ -107,12 +115,6 @@ if [ $GPX -eq 1 ]; then
     fi
 fi
 	
-# Make Mio manager put them on the right date
-# in the calendar.
-T=$(date -j -f '%Y-%m-%d' $DATEFR +'%Y%m%d')1200
-touch -t $T ${OUTBASE}.MP4
-touch -t $T ${OUTBASE}.LOG
-
 # Remove temporary files
 rm $TMPF
 rm $TMPL
