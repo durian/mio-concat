@@ -49,7 +49,13 @@ TMPF=$(mktemp concatf.XXXXXX)
 TMPL=$(mktemp concatl.XXXXXX)
 
 D0=$(date -j -f "%Y-%m-%d %H:%M:%S" "${DATEFR} 00:00:00" +"%s")
+if [[ -z $D0 ]]; then
+    exit 1
+fi
 D1=$(date -j -f "%Y-%m-%d %H:%M:%S" "${DATETO} 23:59:59" +"%s")
+if [[ -z $D1 ]]; then
+    exit 1
+fi
 
 for l in FILE*.LOG; do
     # $GPRMC,143356.000,A,5617.4795,N,01250.6955,E,0.00,0.00,270417,,,A*6C
@@ -106,7 +112,7 @@ if [ $GPX -eq 1 ]; then
     if [[ "$GPSBABEL" == "__NONE__" ]]; then
 	echo "No gpsbabel found"
     else
-	SIMPL="-x discard,hdop=4 -x simplify,crosstrack,error=0.001k"
+	SIMPL="-x discard,hdop=4 -x simplify,crosstrack,error=0.001k -x track,split=20m"
 	# -x position,distance=4m
 	# -x track,pack,sdistance=0.1k,split=10m
 	echo $GPSBABEL -w -t -i nmea -f ${OUTBASE}.LOG $SIMPL -o gpx -F ${OUTBASE}.GPX
@@ -118,3 +124,6 @@ fi
 # Remove temporary files
 rm $TMPF
 rm $TMPL
+
+#for i in 2017-04-{01..30}; do bash mioconc.bash -d -g -f $i;done
+#cp *GPX /Volumes/Luna/Web/Oderland/berck.se/dash/2017/
