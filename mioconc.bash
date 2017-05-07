@@ -3,7 +3,7 @@
 set -o nounset
 
 DATEFR=$(date +"%Y-%m-%d")
-DATETO=0
+DATETO="__NONE__"
 OUTBASE="__NONE__"
 DRYRUN=0  # skip creation of video file
 GPX=0
@@ -47,18 +47,18 @@ while getopts "cdf:gho:s:t:q7" opt; do
   esac
 done
 
-if [ $DATETO -eq 0 ]; then
+if [[ "$DATETO" == "__NONE__" ]]; then
     DATETO=$DATEFR 
 fi
 
 if [[ "$OUTBASE" == "__NONE__" ]]; then
-   OUTBASE=CONC_$(date -j -f "%Y-%m-%d" $DATEFR "+%Y%m%d")
+    OUTBASE=CONC_$(date -j -f "%Y-%m-%d" $DATEFR "+%Y%m%d")
+    if [[ "$DATETO" != "$DATEFR" ]]; then
+	OUTBASE=${OUTBASE}_$(date -j -f "%Y-%m-%d" $DATETO "+%Y%m%d")
+    fi
 fi
 
 echo $DATEFR $DATETO $OUTBASE
-
-TMPF=$(mktemp concatf.XXXXXX)
-TMPL=$(mktemp concatl.XXXXXX)
 
 D0=$(date -j -f "%Y-%m-%d %H:%M:%S" "${DATEFR} 00:00:00" +"%s")
 if [[ -z $D0 ]]; then
@@ -68,6 +68,14 @@ D1=$(date -j -f "%Y-%m-%d %H:%M:%S" "${DATETO} 23:59:59" +"%s")
 if [[ -z $D1 ]]; then
     exit 1
 fi
+
+if [ $D0 -ge $D1 ]; then
+    echo "Date error"
+    exit 1
+fi
+
+TMPF=$(mktemp concatf.XXXXXX)
+TMPL=$(mktemp concatl.XXXXXX)
 
 for LF in FILE*.LOG; do
     # $GPRMC,143356.000,A,5617.4795,N,01250.6955,E,0.00,0.00,270417,,,A*6C
