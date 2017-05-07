@@ -96,11 +96,11 @@ for LF in FILE*.LOG; do
 			echo mv ${FN}.7.MP4 $FN
 			mv ${FN}.7.MP4 $FN
 		    else
-			echo "Size already $VS"
+			echo "Size is $VS, not resizing"
 		    fi
 		fi
 	    fi
-	    #
+	    # Input file for ffmpeg
 	    echo "file '$FN'" >> $TMPF
 	    echo "${LF}" >> $TMPL
 	fi
