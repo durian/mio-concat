@@ -15,3 +15,17 @@ Scans directory for FILE*LOG files, and parses the date from the first $GPRMC me
 * -t: Specify end date of concatenated video
 * -q: Resize the concatenated video to one third size
 * -7: Resize the concatenated file to 720p
+
+## Examples
+
+`bash mioconcat.sh`
+Takes todays files and concatenates them into one video file.
+
+`bash micoconcat-sh -f 2017-04-01 -g`
+Concatenate the files from 2017-04-01, concatenate them, and also create a GPX track file.
+
+`bash mioconcat.sh -f 2017-04-01 -t 2017-04-05`
+Concatenate all files from the 1st of April to the 5th (inclusive).
+
+`bash micoconcat-sh -c`
+Take all todays files, resize them to 720p, then concatenate them. This resizes the original files!
