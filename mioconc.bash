@@ -69,30 +69,32 @@ if [[ -z $D1 ]]; then
     exit 1
 fi
 
-for l in FILE*.LOG; do
+for LF in FILE*.LOG; do
     # $GPRMC,143356.000,A,5617.4795,N,01250.6955,E,0.00,0.00,270417,,,A*6C
-    DT=$(grep GPRMC $l | head -n1 | awk -F',' '{print "20" substr($10,5,2) "-" substr($10,3,2) "-" substr($10,1,2)}')
+    DT=$(grep GPRMC ${LF} | head -n1 | awk -F',' '{print "20" substr($10,5,2) "-" substr($10,3,2) "-" substr($10,1,2)}')
     DX=$(date -j -f "%F" $DT +"%s")
     if [ $DX -ge $D0 -a $DX -le $D1 ]; then
-	FN=${l%LOG}MP4
+	FN=${LF%LOG}MP4
 	if [[ -s $FN ]]; then
-	    echo "Found $l, $FN $DT"
+	    echo "Found ${LF}, $FN $DT"
 	    # Compact first?
 	    if [ $DRYRUN -eq 0 ]; then
 		if [ $COMPACT -eq 1 ]; then # compact first?
 		    eval $(ffprobe -v error -of flat=s=_ -select_streams v:0 -show_entries stream=height,width $FN)
-		    size=${streams_stream_0_width}x${streams_stream_0_height}
-		    if [[ "$size" == "1920x1080" ]]; then
+		    VS=${streams_stream_0_width}x${streams_stream_0_height}
+		    if [[ "$VS" == "1920x1080" ]]; then
 			echo ffmpeg -i $FN -vf scale=-1:720 ${FN}.7.MP4 -loglevel 16
 			ffmpeg -i $FN -vf scale=-1:720 ${FN}.7.MP4 -loglevel 16
 			echo mv ${FN}.7.MP4 $FN
 			mv ${FN}.7.MP4 $FN
+		    else
+			echo "Size already $VS"
 		    fi
 		fi
 	    fi
 	    #
 	    echo "file '$FN'" >> $TMPF
-	    echo "$l" >> $TMPL
+	    echo "${LF}" >> $TMPL
 	fi
     fi
 done
