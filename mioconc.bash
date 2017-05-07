@@ -10,9 +10,13 @@ GPX=0
 GPSBABEL=$(which gpsbabel) || GPSBABEL="__NONE__"
 SPEEDUP=0
 SIZE=0
+COMPACT=0
 
 while getopts "cdf:gho:s:t:q7" opt; do
   case $opt in
+      c)
+	  COMPACT=1
+	  ;;
       d)
 	  DRYRUN=1
 	  ;;
@@ -73,6 +77,20 @@ for l in FILE*.LOG; do
 	FN=${l%LOG}MP4
 	if [[ -s $FN ]]; then
 	    echo "Found $l, $FN $DT"
+	    # Compact first?
+	    if [ $DRYRUN -eq 0 ]; then
+		if [ $COMPACT -eq 1 ]; then # compact first?
+		    eval $(ffprobe -v error -of flat=s=_ -select_streams v:0 -show_entries stream=height,width $FN)
+		    size=${streams_stream_0_width}x${streams_stream_0_height}
+		    if [[ "$size" == "1920x1080" ]]; then
+			echo ffmpeg -i $FN -vf scale=-1:720 ${FN}.7.MP4 -loglevel 16
+			ffmpeg -i $FN -vf scale=-1:720 ${FN}.7.MP4 -loglevel 16
+			echo mv ${FN}.7.MP4 $FN
+			mv ${FN}.7.MP4 $FN
+		    fi
+		fi
+	    fi
+	    #
 	    echo "file '$FN'" >> $TMPF
 	    echo "$l" >> $TMPL
 	fi
