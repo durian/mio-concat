@@ -1,15 +1,17 @@
 #!/bin/bash
 #
+set -o nounset
+
 DATEFR=$(date +"%Y-%m-%d")
 DATETO=0
 OUTBASE="__NONE__"
-HALF=0    # half the size of the video
 DRYRUN=0  # skip creation of video file
 GPX=0
 GPSBABEL=$(which gpsbabel) || GPSBABEL="__NONE__"
 SPEEDUP=0
+SIZE=0
 
-while getopts "df:gho:s:t:" opt; do
+while getopts "cdf:gho:s:t:q7" opt; do
   case $opt in
       d)
 	  DRYRUN=1
@@ -21,7 +23,7 @@ while getopts "df:gho:s:t:" opt; do
 	  GPX=1
 	  ;;
       h)
-	  HALF=1
+	  SIZE=1
 	  ;;
       o)
 	  OUTBASE=$OPTARG
@@ -31,6 +33,12 @@ while getopts "df:gho:s:t:" opt; do
 	  ;;
       t)
 	  DATETO=$OPTARG
+	  ;;
+      q)
+	  SIZE=2
+	  ;;
+      7)
+	  SIZE=3
 	  ;;
   esac
 done
@@ -73,6 +81,9 @@ done
 
 if [[ ! -s $TMPF ]]; then
     echo "No files to concatenate."
+    # Remove temporary files
+    rm $TMPF
+    rm $TMPL
     exit 1
 fi
 
@@ -81,20 +92,27 @@ fi
 T=$(date -j -f '%Y-%m-%d' $DATEFR +'%Y%m%d')1200
 
 if [ $DRYRUN -eq 0 ]; then
-    if [ $HALF -eq 1 ]; then
+    if [ $SIZE -eq 1 ]; then # half
 	OUTBASEF=${OUTBASE}.H
 	echo ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/2:-2 ${OUTBASEF}.MP4 
-	ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/2:-2 ${OUTBASEF}.MP4 -loglevel 8
-	touch -t $T ${OUTBASEF}.MP4
+	ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/2:-2 ${OUTBASEF}.MP4 -loglevel 16
+    elif [ $SIZE -eq 2 ]; then
+	OUTBASEF=${OUTBASE}.Q # third (quarter)
+	echo ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/3:-2 ${OUTBASEF}.MP4 
+	ffmpeg -f concat -safe 0 -i $TMPF -vf scale=iw/3:-2 ${OUTBASEF}.MP4 -loglevel 16
+    elif [ $SIZE -eq 3 ]; then
+	OUTBASEF=${OUTBASE}.7 # 720p
+	echo ffmpeg -f concat -safe 0 -i $TMPF -vf scale=-1:720 ${OUTBASEF}.MP4 
+	ffmpeg -f concat -safe 0 -i $TMPF -vf scale=-1:720 ${OUTBASEF}.MP4 -loglevel 16
     else
 	OUTBASEF=${OUTBASE}
 	echo ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASEF}.MP4 
-	ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASEF}.MP4 -loglevel 8
-	touch -t $T ${OUTBASEF}.MP4
+	ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASEF}.MP4 -loglevel 16
     fi
+    touch -t $T ${OUTBASEF}.MP4
     echo "Created ${OUTBASEF}.MP4"
 
-    # Hyperlapse
+    # Hyperlapse, can be done on the output from above
     if [ ${SPEEDUP} -gt 0 ]; then
 	echo ffmpeg -i ${OUTBASEF}.MP4 -filter:v "setpts=(1/${SPEEDUP})*PTS" -an ${OUTBASEF}.S${SPEEDUP}.MP4
 	ffmpeg -i ${OUTBASEF}.MP4 -filter:v "setpts=(1/${SPEEDUP})*PTS" -an ${OUTBASEF}.S${SPEEDUP}.MP4 -loglevel 8
@@ -108,6 +126,11 @@ cat $(cat $TMPL) > ${OUTBASE}.LOG
 echo "Created ${OUTBASE}.LOG"
 touch -t $T ${OUTBASE}.LOG
 
+# Remove temporary files
+rm $TMPF
+rm $TMPL
+
+# Create GPX file
 if [ $GPX -eq 1 ]; then
     if [[ "$GPSBABEL" == "__NONE__" ]]; then
 	echo "No gpsbabel found"
@@ -121,9 +144,6 @@ if [ $GPX -eq 1 ]; then
     fi
 fi
 	
-# Remove temporary files
-rm $TMPF
-rm $TMPL
 
 #for i in 2017-04-{01..30}; do bash mioconc.bash -d -g -f $i;done
 #cp *GPX /Volumes/Luna/Web/Oderland/berck.se/dash/2017/
