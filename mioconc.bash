@@ -8,7 +8,7 @@ OUTBASE="__NONE__"
 DRYRUN=0  # skip creation of video file
 GPX=0
 GPSBABEL=$(which gpsbabel) || GPSBABEL="__NONE__"
-SPEEDUP=0
+SPEEDUP=-1
 SIZE=0
 COMPACT=0
 
@@ -141,6 +141,14 @@ if [ $DRYRUN -eq 0 ]; then
     echo "Created ${OUTBASEF}.MP4"
 
     # Hyperlapse, can be done on the output from above
+    if [ ${SPEEDUP} -eq 0 ]; then #Calculate speedup needed to make it one minute
+	SECS=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ${OUTBASEF}.MP4)
+	#  60.394000
+	echo "Video length $SECS seconds."
+	SPEEDUP=$(awk -v SECS=$SECS 'BEGIN { print (SECS / 60.0) }')
+	SPEEDUP=${SPEEDUP%.*} #remove floating part
+	echo "Calculated speedup is $SPEEDUP"
+    fi
     if [ ${SPEEDUP} -gt 0 ]; then
 	echo ffmpeg -i ${OUTBASEF}.MP4 -filter:v "setpts=(1/${SPEEDUP})*PTS" -an ${OUTBASEF}.S${SPEEDUP}.MP4
 	ffmpeg -i ${OUTBASEF}.MP4 -filter:v "setpts=(1/${SPEEDUP})*PTS" -an ${OUTBASEF}.S${SPEEDUP}.MP4 -loglevel 8
@@ -175,3 +183,5 @@ fi
 
 #for i in 2017-04-{01..30}; do bash mioconc.bash -d -g -f $i;done
 #cp *GPX /Volumes/Luna/Web/Oderland/berck.se/dash/2017/
+#ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 FILE0028.S4.MP4
+#  60.394000
