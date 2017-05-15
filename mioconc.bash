@@ -135,7 +135,8 @@ if [ $DRYRUN -eq 0 ]; then
     else
 	OUTBASEF=${OUTBASE}
 	echo ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASEF}.MP4 
-	ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASEF}.MP4 -loglevel 16
+	X=$(ffmpeg -f concat -safe 0 -i $TMPF -c copy ${OUTBASEF}.MP4 -loglevel 16)
+	echo "X=$X"
     fi
     touch -t $T ${OUTBASEF}.MP4
     echo "Created ${OUTBASEF}.MP4"
@@ -185,3 +186,7 @@ fi
 #cp *GPX /Volumes/Luna/Web/Oderland/berck.se/dash/2017/
 #ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 FILE0028.S4.MP4
 #  60.394000
+
+#find . -name '*LOG' -print | xargs -I % sh -c 'X=$(grep GPRMC % | tail -n1);echo %, $X' | awk -F, '{print $1, $3}' | sort -n -k2
+
+#find . -name 'FI*LOG' -print | xargs -I % sh -c 'X=$(grep GPRMC % | tail -n1);echo %, $X' | awk -F, '{print $1, substr($11,5,4)substr($11,3,2)substr($11,1,2) "-" $3}' | sort -n -k2
