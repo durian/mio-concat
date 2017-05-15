@@ -190,3 +190,5 @@ fi
 #find . -name '*LOG' -print | xargs -I % sh -c 'X=$(grep GPRMC % | tail -n1);echo %, $X' | awk -F, '{print $1, $3}' | sort -n -k2
 
 #find . -name 'FI*LOG' -print | xargs -I % sh -c 'X=$(grep GPRMC % | tail -n1);echo %, $X' | awk -F, '{print $1, substr($11,5,4)substr($11,3,2)substr($11,1,2) "-" $3}' | sort -n -k2
+
+#find . -name 'E*LOG' -print | xargs -I % sh -c 'X=$(grep GPRMC % | tail -n1);Y=$(grep GPRMC % | head -n1);echo %, $Y' | awk -F, '{print $1, substr($11,5,4)substr($11,3,2)substr($11,1,2) "-" $3}' | sort -n -k2
