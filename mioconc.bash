@@ -11,8 +11,9 @@ GPSBABEL=$(which gpsbabel) || GPSBABEL="__NONE__"
 SPEEDUP=-1
 SIZE=0
 COMPACT=0
+DATELOOP=0
 
-while getopts "cdf:gho:s:t:q7" opt; do
+while getopts "cdf:gho:s:t:q7L" opt; do
   case $opt in
       c)
 	  COMPACT=1
@@ -44,8 +45,34 @@ while getopts "cdf:gho:s:t:q7" opt; do
       7)
 	  SIZE=3
 	  ;;
+      L)
+	  DATELOOP=1
+	  ;;
   esac
 done
+
+# date loop, generate individual mioconc commands
+if [ $DATELOOP -eq 1 ]; then
+    #DATEFR="2017-10-01"
+    #DATETO="2017-10-31"
+    echo "# -L -f $DATEFR -t $DATETO"
+    CURDATETS=$(date -j -f "%Y-%m-%d" $DATEFR "+%s")
+    ENDDATETS=$(date -j -f "%Y-%m-%d" $DATETO "+%s")
+    offset=86400
+    while [ "$CURDATETS" -le "$ENDDATETS" ]
+    do
+	date=$(date -j -f "%s" $CURDATETS "+%Y-%m-%d")
+	# check if we have filenames like CONC_20170810_AccuBiltemaJet.MP4
+	OUTBASE=CONC_$(date -j -f "%Y-%m-%d" $date "+%Y%m%d")
+	if [ "`echo $OUTBASE*`" == "$OUTBASE*" ]; then
+	    echo "bash mioconc.bash -g -c -f $date"
+	else
+	    echo "# exists `echo $OUTBASE*`"
+	fi
+	CURDATETS=$(($CURDATETS+$offset))
+    done
+    exit 0
+fi
 
 if [[ "$DATETO" == "__NONE__" ]]; then
     DATETO=$DATEFR 
@@ -78,12 +105,18 @@ TMPF=$(mktemp concatf.XXXXXX)
 TMPL=$(mktemp concatl.XXXXXX)
 
 for LF in FILE*.LOG; do
+    FSIZE=$(stat -f%z ${LF})
+    if [[ "${FSIZE}" == "0" ]]; then
+	echo "Skipping 0 byte file ${LF}"
+	continue
+    fi
     # $GPRMC,143356.000,A,5617.4795,N,01250.6955,E,0.00,0.00,270417,,,A*6C
     DT=$(grep GPRMC ${LF} | head -n1 | awk -F',' '{print "20" substr($10,5,2) "-" substr($10,3,2) "-" substr($10,1,2)}')
     DX=$(date -j -f "%F" $DT +"%s")
+    
     if [ $DX -ge $D0 -a $DX -le $D1 ]; then
 	FN=${LF%LOG}MP4
-	if [[ -s $FN ]]; then
+	if [ -s $FN -o $DRYRUN -ne 0 ] ; then
 	    echo "Found ${LF}, $FN $DT"
 	    # Compact first?
 	    if [ $DRYRUN -eq 0 ]; then
@@ -192,3 +225,24 @@ fi
 #find . -name 'FI*LOG' -print | xargs -I % sh -c 'X=$(grep GPRMC % | tail -n1);echo %, $X' | awk -F, '{print $1, substr($11,5,4)substr($11,3,2)substr($11,1,2) "-" $3}' | sort -n -k2
 
 #find . -name 'E*LOG' -print | xargs -I % sh -c 'X=$(grep GPRMC % | tail -n1);Y=$(grep GPRMC % | head -n1);echo %, $Y' | awk -F, '{print $1, substr($11,5,4)substr($11,3,2)substr($11,1,2) "-" $3}' | sort -n -k2
+
+# MONTHLY GPX TRACK
+#Peters-iMac:vid3 pberck
+#  bash mioconc.bash -g -c -f 2017-07-01 -t 2017-07-31 -d
+#Found FILE0134.LOG, FILE0134.MP4 2017-07-28
+#/usr/local/bin/gpsbabel -w -t -i nmea -f CONC_20170701_20170731.LOG -x discard,hdop=4 -x simplify,crosstrack,error=0.001k -x track,split=20m -o gpx -F CONC_20170701_20170731.GPX
+#Created CONC_20170701_20170731.GPX
+#  cp CONC_20170701_20170731.GPX /Volumes/Luna/Web/Oderland/berck.se/dash/2017/
+
+# hand speed
+# ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1  CONC_20171221_BilprovLakareTastarp.MP4
+#3746.917000
+# bc
+#3746.917000 / 60
+#62
+# ffmpeg -i CONC_20171221_BilprovLakareTastarp.MP4 -filter:v "setpts=(1/62)*PTS" -an S62.MP4 -loglevel 8
+#
+# time ffmpeg -i CONC_20171221_BilprovLakareTastarp.MP4 -filter:v "setpts=(1/24)*PTS" -an S62.MP4 -loglevel 8
+#real	2m44.326s
+#user	19m14.235s
+#sys	0m9.823s
