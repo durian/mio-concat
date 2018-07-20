@@ -2,12 +2,13 @@
 #
 #
 # Goes through the photo's, reads their timestamp, and tries to find the timestamp
-# in the relevant log file. Tries to parse position and verlocity from the
+# in the relevant log file. Tries to parse position and velocity from the
 # log file, and draws it on the image. Renames the image.
 #
 for FILE in IMG????.jpg;
 do
     PRE="${FILE%.jpg}"
+    # Note that the following statements use the OSX (BSD) version of stat
     DT=`stat -f "%Sm" -t "%Y%m%d_%H%M%S" "${FILE}"` # full date_time stamp
     PDT=`stat -f "%Sm" -t "%Y/%m/%d %H:%M:%S" "${FILE}"` # pretty date to put on image
     LTM=`stat -f "%Sm" -t "%H%M%S" "${FILE}"` # local time
