@@ -1,6 +1,18 @@
 #!/bin/bash
 #
+# OSX+Linux version 2019-05-05
+#
 set -o nounset
+
+function dt_conv() {
+    if [ $OSX -eq 1 ]; then
+	TS=$(date -j -f "%Y-%m-%d" $1 $2) #osx
+    else
+	TS=$(date --date=$1 $2) # UNIX?
+    fi
+    echo "$TS"
+    return 0
+}
 
 DATEFR=$(date +"%Y-%m-%d")
 DATETO="__NONE__"
@@ -12,6 +24,11 @@ SPEEDUP=-1
 SIZE=0
 COMPACT=0
 DATELOOP=0
+
+OSX=0
+if [[ "$(uname)" == "Darwin" ]];then
+    OSX=1
+fi
 
 while getopts "cdf:gho:s:t:q7L" opt; do
   case $opt in
@@ -56,14 +73,14 @@ if [ $DATELOOP -eq 1 ]; then
     #DATEFR="2017-10-01"
     #DATETO="2017-10-31"
     echo "# -L -f $DATEFR -t $DATETO"
-    CURDATETS=$(date -j -f "%Y-%m-%d" $DATEFR "+%s")
-    ENDDATETS=$(date -j -f "%Y-%m-%d" $DATETO "+%s")
+    CURDATETS=$(dt_conv $DATEFR "+%s")
+    ENDDATETS=$(dt_conv $DATETO "+%s")
     offset=86400
     while [ "$CURDATETS" -le "$ENDDATETS" ]
     do
-	date=$(date -j -f "%s" $CURDATETS "+%Y-%m-%d")
+	date=$(dt_conv "@${CURDATETS}" "+%Y-%m-%d")
 	# check if we have filenames like CONC_20170810_AccuBiltemaJet.MP4
-	OUTBASE=CONC_$(date -j -f "%Y-%m-%d" $date "+%Y%m%d")
+	OUTBASE=CONC_$(dt_conv $date "+%Y%m%d")
 	if [ "`echo $OUTBASE*`" == "$OUTBASE*" ]; then
 	    echo "bash mioconc.bash -g -c -f $date"
 	else
@@ -79,19 +96,27 @@ if [[ "$DATETO" == "__NONE__" ]]; then
 fi
 
 if [[ "$OUTBASE" == "__NONE__" ]]; then
-    OUTBASE=CONC_$(date -j -f "%Y-%m-%d" $DATEFR "+%Y%m%d")
+    OUTBASE=CONC_$(dt_conv $DATEFR "+%Y%m%d")
     if [[ "$DATETO" != "$DATEFR" ]]; then
-	OUTBASE=${OUTBASE}_$(date -j -f "%Y-%m-%d" $DATETO "+%Y%m%d")
+	OUTBASE=${OUTBASE}_$(dt_conv $DATETO "+%Y%m%d") #two dates in filename
     fi
 fi
 
 echo $DATEFR $DATETO $OUTBASE
 
-D0=$(date -j -f "%Y-%m-%d %H:%M:%S" "${DATEFR} 00:00:00" +"%s")
+if [ $OSX -eq 1 ]; then
+    D0=$(date -j -f "%Y-%m-%d %H:%M:%S" "${DATEFR} 00:00:00" +"%s") #osx
+else
+    D0=$(date --date="${DATEFR} 00:00:00" +"%s")
+fi
 if [[ -z $D0 ]]; then
     exit 1
 fi
-D1=$(date -j -f "%Y-%m-%d %H:%M:%S" "${DATETO} 23:59:59" +"%s")
+if [ $OSX -eq 1 ]; then
+    D1=$(date -j -f "%Y-%m-%d %H:%M:%S" "${DATETO} 23:59:59" +"%s") #osx
+else
+    D1=$(date --date="${DATETO} 23:59:59" +"%s")
+fi
 if [[ -z $D1 ]]; then
     exit 1
 fi
@@ -105,15 +130,18 @@ TMPF=$(mktemp concatf.XXXXXX)
 TMPL=$(mktemp concatl.XXXXXX)
 
 for LF in FILE*.LOG; do
-    FSIZE=$(stat -f%z ${LF})
+    if [ $OSX -eq 1 ]; then
+	FSIZE=$(stat -f%z ${LF}) #osx
+    else
+	FSIZE=$(stat  --printf="%s" ${LF})
+    fi
     if [[ "${FSIZE}" == "0" ]]; then
 	echo "Skipping 0 byte file ${LF}"
 	continue
     fi
     # $GPRMC,143356.000,A,5617.4795,N,01250.6955,E,0.00,0.00,270417,,,A*6C
     DT=$(grep GPRMC ${LF} | head -n1 | awk -F',' '{print "20" substr($10,5,2) "-" substr($10,3,2) "-" substr($10,1,2)}')
-    DX=$(date -j -f "%F" $DT +"%s")
-    
+    DX=$(dt_conv $DT +"%s")
     if [ $DX -ge $D0 -a $DX -le $D1 ]; then
 	FN=${LF%LOG}MP4
 	if [ -s $FN -o $DRYRUN -ne 0 ] ; then
@@ -150,8 +178,7 @@ fi
 
 # Make Mio manager put them on the right date
 # in the calendar.
-T=$(date -j -f '%Y-%m-%d' $DATEFR +'%Y%m%d')1200
-
+T=$(dt_conv $DATEFR +'%Y%m%d')1200
 if [ $DRYRUN -eq 0 ]; then
     if [ $SIZE -eq 1 ]; then # half
 	OUTBASEF=${OUTBASE}.H
